@@ -1,5 +1,8 @@
-﻿using API.Entities;
+﻿using API.DTOs;
+using API.Entities;
 using API.Interfaces;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using SQLitePCL;
 
@@ -8,13 +11,30 @@ namespace API.Data
     public class UserRepository : IUserRepository
     {
         private readonly DataContext _context;
-        public UserRepository(DataContext context)
+        private readonly IMapper _mapper;
+        public UserRepository(DataContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
         public async Task<AppUser> GetByIdAsync(int id)
         {
             return await _context.Users.FindAsync(id);
+        }
+
+        public async Task<MemberDTO> GetMemberAsync(string username)
+        {
+            return await _context.Users
+                        .Where(x => x.UserName == username)
+                        .ProjectTo<MemberDTO>(_mapper.ConfigurationProvider)
+                        .SingleOrDefaultAsync();
+        }
+
+        public async Task<IEnumerable<MemberDTO>> GetMembersAsync()
+        {
+            return await _context.Users
+                .ProjectTo<MemberDTO>(_mapper.ConfigurationProvider)
+                .ToListAsync();
         }
 
         public async Task<AppUser> GetUserByUsernameAsync(string username)
